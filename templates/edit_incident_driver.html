@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Incidência{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-warning">
+                <h2 class="h3 mb-0">Editar a Minha Incidência</h2>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Descrição</label>
+                        <textarea id="descricao" name="descricao" rows="4" class="form-control" required>{{ incident.descricao }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="data_reporte" class="form-label">Data e Hora do Reporte</label>
+                        <!-- CORREÇÃO: Usa [:16] para cortar os segundos e evitar o erro -->
+                        <input type="datetime-local" id="data_reporte" name="data_reporte" class="form-control"
+                               value="{{ incident.data_reporte[:16]|replace(' ', 'T') if incident.data_reporte else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <hr>
+                        <h6>Fotos da Incidência</h6>
+                        {% if incident.foto_incidencia %}
+                            <p class="text-muted small">Fotos Atuais:</p>
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                {% for foto in incident.foto_incidencia.split(',') %}
+                                    <img src="{{ url_for('static', filename=foto) }}" alt="Foto da Incidência" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px;">
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <label for="fotos_incidencia" class="form-label">Carregar Novas Fotos (irá substituir as antigas)</label>
+                        <input type="file" id="fotos_incidencia" name="fotos_incidencia" class="form-control" accept="image/*" multiple>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">Guardar Alterações</button>
+                        <a href="{{ url_for('driver_dashboard') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt" class="h-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestão de Frota New Print{% endblock %}</title>
+
+    <!-- CSS do Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Ícones (Font Awesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        /* Estilos personalizados podem ir aqui */
+        body {
+            background-color: #f4f7f6;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column h-100">
+
+    <!-- Barra de Navegação Principal -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-truck me-2"></i>
+                    Gestão de Frota New Print
+                </a>
+                {% if session['user_id'] %}
+                    <div class="d-flex align-items-center text-white">
+                        Olá, {{ session['user_name'] }}!
+                        <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm ms-3">
+                            <i class="fas fa-sign-out-alt"></i> Sair
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <!-- Conteúdo Principal da Página -->
+    <main class="flex-shrink-0">
+        <div class="container mt-5">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}
+            <!-- O conteúdo de cada página (login, dashboard, etc.) será inserido aqui -->
+            {% endblock %}
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">&copy; 2025 Gestão de Frota New Print. Todos os direitos reservados.</span>
+        </div>
+    </footer>
+
+    <!-- JavaScript do Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

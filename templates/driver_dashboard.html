@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Painel do Motorista{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilo para a animação de fade-in */
+    .fade-in-card {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+</style>
+
+<h2 class="mb-4">Painel do Motorista</h2>
+
+<!-- Voltas em Curso de Toda a Frota -->
+<div class="card shadow-sm mb-4 fade-in-card">
+    <div class="card-header">
+        <h5 class="mb-0">Voltas em Curso de Toda a Frota</h5>
+    </div>
+    <div class="card-body">
+        {% if all_open_rounds %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th>Veículo</th>
+                            <th>Motorista</th>
+                            <th>Destino</th>
+                            <th>Data/Hora Saída</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for round in all_open_rounds %}
+                        <tr>
+                            <td>
+                                {% if round.veiculo_foto %}
+                                    <img src="{{ url_for('static', filename=round.veiculo_foto) }}" alt="Foto do Veículo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                {% else %}
+                                    <div class="text-center text-muted" style="width: 60px; height: 60px; line-height: 60px; background-color: #e9ecef; border-radius: 8px;">N/A</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ round.veiculo_nome }} ({{ round.veiculo_matricula }})</td>
+                            <td>{{ round.motorista_nome }}</td>
+                            <td>{{ round.destino }}</td>
+                            <td>{{ round.data_hora_saida.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                {% if round.id_motorista == session['user_id'] %}
+                                    <a href="{{ url_for('editar_volta_motorista', round_id=round.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">Não há voltas em curso no momento.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Secção Pessoal do Motorista -->
+{% if not current_round %}
+    <!-- Formulário para iniciar uma nova volta -->
+    <div class="card shadow-sm mb-4 fade-in-card">
+        <div class="card-header"><h5 class="mb-0">Iniciar Nova Volta</h5></div>
+        <div class="card-body">
+            <form action="{{ url_for('iniciar_volta') }}" method="post" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-md-6"><label for="id_veiculo" class="form-label">Veículo:</label><select id="id_veiculo" name="id_veiculo" class="form-select" required><option value="">Selecione...</option>{% for vehicle in available_vehicles %}<option value="{{ vehicle.id }}">{{ vehicle.nome }} - {{ vehicle.matricula }}</option>{% endfor %}</select></div>
+                    <div class="col-md-6"><label for="destino" class="form-label">Destino:</label><input type="text" id="destino" name="destino" class="form-control" required></div>
+                    <div class="col-12"><label for="acompanhantes" class="form-label">Observações (ex: acompanhantes):</label><textarea id="acompanhantes" name="acompanhantes" rows="2" class="form-control"></textarea></div>
+                    <div class="col-md-6"><label for="kms_saida" class="form-label">KMs de Saída:</label><input type="number" id="kms_saida" name="kms_saida" class="form-control" step="0.1" required></div>
+                    <div class="col-md-6"><label for="data_hora_saida" class="form-label">Data e Hora de Saída:</label><input type="datetime-local" id="data_hora_saida" name="data_hora_saida" class="form-control" required></div>
+                    <div class="col-12"><label for="fotos_saida" class="form-label">Fotos da Saída:</label><input type="file" id="fotos_saida" name="fotos_saida" class="form-control" accept="image/*" multiple></div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Iniciar Volta</button>
+            </form>
+        </div>
+    </div>
+{% else %}
+    <!-- Formulário para fechar a volta atual -->
+    <div class="card shadow-sm mb-4 fade-in-card">
+        <div class="card-header bg-primary text-white"><h5 class="mb-0">A sua Volta Atual</h5></div>
+        <div class="card-body">
+            <p><strong>Veículo:</strong> {{ current_round.veiculo_nome }} ({{ current_round.veiculo_matricula }})</p>
+            <p><strong>Destino:</strong> {{ current_round.destino }}</p>
+            {% if current_round.acompanhantes %}<p><strong>Observações:</strong> {{ current_round.acompanhantes }}</p>{% endif %}
+            <a href="{{ url_for('editar_volta_motorista', round_id=current_round.id) }}" class="btn btn-warning btn-sm mb-3"><i class="fas fa-edit me-1"></i> Editar a Minha Volta</a>
+            <hr>
+            <!-- VALIDAÇÃO ADICIONADA AQUI -->
+            <form action="{{ url_for('fechar_volta', round_id=current_round.id) }}" method="post" enctype="multipart/form-data" onsubmit="return validateKms()">
+                <h5 class="mt-3">Fechar Volta</h5>
+                <div class="row g-3">
+                    <div class="col-md-6"><label for="kms_chegada" class="form-label">KMs de Chegada:</label><input type="number" id="kms_chegada" name="kms_chegada" class="form-control" step="0.1" required></div>
+                    <div class="col-md-6"><label for="data_hora_chegada" class="form-label">Data e Hora de Chegada:</label><input type="datetime-local" id="data_hora_chegada" name="data_hora_chegada" class="form-control" required></div>
+                    <div class="col-12"><label for="fotos_chegada" class="form-label">Fotos da Chegada:</label><input type="file" id="fotos_chegada" name="fotos_chegada" class="form-control" accept="image/*" multiple></div>
+                </div>
+                <button type="submit" class="btn btn-danger mt-3">Confirmar e Fechar Volta</button>
+            </form>
+        </div>
+    </div>
+    <!-- SCRIPT DE VALIDAÇÃO DOS KMS MOVIDO PARA AQUI DENTRO -->
+    <script>
+        function validateKms() {
+            // O Jinja2 injeta o valor dos KMs de saída diretamente no script
+            const kmsSaida = {{ current_round.kms_saida }};
+            const kmsChegadaInput = document.getElementById('kms_chegada');
+            const kmsChegada = parseFloat(kmsChegadaInput.value);
+
+            if (isNaN(kmsChegada)) {
+                alert('Por favor, insira um valor numérico para os KMs de Chegada.');
+                return false; // Impede o envio do formulário
+            }
+
+            if (kmsChegada < kmsSaida) {
+                alert('Erro: Os KMs de chegada não podem ser inferiores aos KMs de saída (' + kmsSaida + ').');
+                return false; // Impede o envio do formulário
+            }
+
+            return true; // Permite o envio do formulário
+        }
+    </script>
+{% endif %}
+
+<!-- Formulário de Incidências -->
+<div class="card shadow-sm mb-4 fade-in-card">
+    <div class="card-header"><h5 class="mb-0">Reportar Nova Incidência</h5></div>
+    <div class="card-body">
+        <form action="{{ url_for('reportar_incidencia') }}" method="post" enctype="multipart/form-data">
+            <div class="row g-3">
+                <div class="col-12"><label for="id_veiculo_incidencia" class="form-label">Veículo da Incidência:</label><select id="id_veiculo_incidencia" name="id_veiculo_incidencia" class="form-select" required><option value="">Selecione...</option>{% for vehicle in all_vehicles %}<option value="{{ vehicle.id }}">{{ vehicle.nome }} - {{ vehicle.matricula }}</option>{% endfor %}</select></div>
+                <div class="col-12"><label for="descricao_incidencia" class="form-label">Descrição:</label><textarea id="descricao_incidencia" name="descricao_incidencia" rows="3" class="form-control" required></textarea></div>
+                <div class="col-12"><label for="fotos_incidencia" class="form-label">Fotos:</label><input type="file" id="fotos_incidencia" name="fotos_incidencia" class="form-control" accept="image/*" multiple></div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Reportar Incidência</button>
+        </form>
+    </div>
+</div>
+
+<!-- Minhas Incidências Reportadas -->
+<div class="card shadow-sm mb-4 fade-in-card">
+    <div class="card-header"><h5 class="mb-0">Minhas Incidências Reportadas</h5></div>
+    <div class="card-body">
+        {% if driver_incidents %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Veículo</th><th>Descrição</th><th>Data</th><th>Status</th><th>Fotos</th>
+                            <th>Ações</th> <!-- NOVA COLUNA -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for incident in driver_incidents %}
+                        <tr>
+                            <td>{{ incident.veiculo_matricula }}</td>
+                            <td>{{ incident.descricao }}</td>
+                            <td>{{ incident.data_reporte }}</td>
+                            <td>
+                                <span class="badge {{ 'bg-warning text-dark' if incident.status == 0 else ('bg-info text-dark' if incident.status == 1 else 'bg-success') }}">
+                                    {{ 'Em Aberto' if incident.status == 0 else ('Em Resolução' if incident.status == 1 else 'Fechada') }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if incident.fotos %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for foto in incident.fotos %}
+                                    <a href="{{ url_for('static', filename=foto) }}" target="_blank">
+                                        <img src="{{ url_for('static', filename=foto) }}" alt="Foto da Incidência" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <!-- NOVO BOTÃO DE EDIÇÃO -->
+                            <td>
+                                <a href="{{ url_for('editar_incidencia_motorista', incident_id=incident.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">Ainda não reportou nenhuma incidência.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Histórico de Voltas Concluídas -->
+<div class="card shadow-sm mb-4 fade-in-card">
+    <div class="card-header"><h5 class="mb-0">O Meu Histórico de Voltas</h5></div>
+    <div class="card-body">
+        {% if closed_rounds %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead><tr><th>Foto Veículo</th><th>Veículo</th><th>Destino</th><th>Data Chegada</th><th>KMs Percorridos</th></tr></thead>
+                    <tbody>
+                        {% for round in closed_rounds %}
+                        <tr>
+                            <td>{% if round.foto_veiculo %}<img src="{{ url_for('static', filename=round.foto_veiculo) }}" alt="Foto do Veículo" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">{% else %}N/A{% endif %}</td>
+                            <td>{{ round.veiculo_nome }} ({{ round.matricula }})</td>
+                            <td>{{ round.destino }}</td>
+                            <td>{{ round.data_hora_chegada }}</td>
+                            <td><strong>{{ "%.1f"|format(round.kms_chegada - round.kms_saida) }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">Ainda não tem nenhuma volta concluída.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Script para a animação de fade-in
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.fade-in-card');
+        let delay = 100;
+        cards.forEach(card => {
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, delay);
+            delay += 100;
+        });
+    });
+</script>
+{% endblock %}

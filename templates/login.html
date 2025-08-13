@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Gestão de Frota{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5 col-xl-4">
+        
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-5">
+                <h2 class="card-title text-center mb-2">Bem-vindo!</h2>
+                <p class="text-center text-muted mb-4">Faça login para continuar</p>
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nome de Utilizador</label>
+                        <input type="text" id="username" name="username" class="form-control form-control-lg" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Palavra-passe</label>
+                        <input type="password" id="password" name="password" class="form-control form-control-lg" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+                    </div>
+                </form>
+
+                <p class="mt-4 text-center text-muted small">
+                    Ainda não tem conta? <a href="{{ url_for('register') }}">Registar</a>
+                </p>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

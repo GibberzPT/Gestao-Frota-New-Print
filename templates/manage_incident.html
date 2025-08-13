@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .flash-message {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 50;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            color: #ffffff;
+            font-weight: bold;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="flash-message bg-green-500">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl p-8 m-4">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">{{ title }}</h1>
+
+        <form action="" method="post" enctype="multipart/form-data" class="space-y-6">
+
+            <div>
+                <label for="id_motorista" class="block text-sm font-medium text-gray-700">Motorista</label>
+                <select name="id_motorista" id="id_motorista" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" required>
+                    {% for motorista in motoristas %}
+                    <option value="{{ motorista.id }}" {% if incident and incident.id_utilizador == motorista.id %}selected{% endif %}>
+                        {{ motorista.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="id_veiculo" class="block text-sm font-medium text-gray-700">Veículo</label>
+                <select name="id_veiculo" id="id_veiculo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" required>
+                    {% for veiculo in veiculos %}
+                    <option value="{{ veiculo.id }}" {% if incident and incident.id_veiculo == veiculo.id %}selected{% endif %}>
+                        {{ veiculo.nome }} ({{ veiculo.matricula }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="descricao" class="block text-sm font-medium text-gray-700">Descrição da Incidência</label>
+                <textarea name="descricao" id="descricao" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" required>{{ incident.descricao if incident else '' }}</textarea>
+            </div>
+
+            <div>
+                <label for="foto_incidencia" class="block text-sm font-medium text-gray-700">Fotos da Incidência</label>
+                <input type="file" name="foto_incidencia" id="foto_incidencia" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" multiple>
+
+                {% if incident and incident.foto_incidencia %}
+                    <p class="mt-2 text-sm text-gray-500">Fotos atuais:</p>
+                    <div class="flex flex-wrap gap-4 mt-2">
+                        {% for foto in incident.foto_incidencia.split(',') %}
+                            <img src="{{ url_for('static', filename=foto) }}" alt="Foto da Incidência" class="w-32 h-32 object-cover rounded-lg shadow-md">
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if incident %}
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                <select name="status" id="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" required>
+                    <option value="0" {% if incident.status == 0 %}selected{% endif %}>Em Aberto</option>
+                    <option value="1" {% if incident.status == 1 %}selected{% endif %}>Em Resolução</option>
+                    <option value="2" {% if incident.status == 2 %}selected{% endif %}>Fechada</option>
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="flex justify-between items-center mt-6">
+                <a href="{{ url_for('admin_incidents') }}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    Cancelar
+                </a>
+                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    {{ 'Atualizar Incidência' if incident else 'Adicionar Incidência' }}
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const flashMessage = document.querySelector('.flash-message');
+            if (flashMessage) {
+                setTimeout(() => {
+                    flashMessage.style.opacity = '0';
+                    setTimeout(() => flashMessage.remove(), 500);
+                }, 3000);
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Administrador</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+            padding-top: 20px;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .sidebar .nav-link {
+            color: #adb5bd;
+            font-weight: bold;
+            border-radius: 0 !important;
+        }
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: #0d6efd;
+        }
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background-color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Barra Lateral Fixa -->
+        <div class="sidebar d-flex flex-column p-3">
+            <h3 class="text-center mb-4">Administração Frota New Print</h3>
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'vehicles' %}active{% endif %}" href="{{ url_for('admin_vehicles') }}">
+                        <i class="fas fa-car me-2"></i> Veículos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'rounds' %}active{% endif %}" href="{{ url_for('admin_rounds') }}">
+                        <i class="fas fa-route me-2"></i> Voltas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'incidents' %}active{% endif %}" href="{{ url_for('admin_incidents') }}">
+                        <i class="fas fa-triangle-exclamation me-2"></i> Incidências
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'users' %}active{% endif %}" href="{{ url_for('admin_users') }}">
+                        <i class="fas fa-users me-2"></i> Utilizadores
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('full_backup') }}">
+                        <i class="fas fa-archive me-2"></i> Backup Completo
+                    </a>
+                </li>
+            </ul>
+            <hr>
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-user-circle fa-lg me-2"></i>
+                    <strong>{{ session['user_name'] }}</strong>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sair</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Conteúdo Principal -->
+        <div class="main-content w-100">
+            <div class="container-fluid">
+                <h2 class="mb-4">Dashboard de Administração</h2>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% if active_tab == 'vehicles' %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mt-4">Gestão de Veículos</h3>
+                        <a href="{{ url_for('add_vehicle') }}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Adicionar Veículo</a>
+                    </div>
+                    <div class="list-group">
+                        {% for vehicle in vehicles %}
+                            <div class="list-group-item list-group-item-action p-3 mb-3 border rounded shadow-sm">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-3"><img src="{{ vehicle.foto_url }}" class="img-fluid rounded" alt="Foto de {{ vehicle.nome }}" style="height: 120px; width: 100%; object-fit: cover;"></div>
+                                    <div class="col-md-7">
+                                        <h5 class="mb-1">{{ vehicle.nome }}</h5>
+                                        <p class="mb-1"><strong>Matrícula:</strong> <span class="badge bg-secondary">{{ vehicle.matricula }}</span></p>
+                                        <p class="mb-1"><small><strong>KMs Atuais:</strong> {{ "%.0f"|format(vehicle.kms_atuais) if vehicle.kms_atuais else 'N/A' }}</small></p>
+                                        <p class="mb-1"><small><strong>Próxima Revisão:</strong> {{ vehicle.data_revisao }}</small></p>
+                                        <p class="mb-0"><small><strong>Próxima Inspeção:</strong> {{ vehicle.data_inspecao }}</small></p>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <div class="d-grid gap-2 d-md-block">
+                                            <a href="{{ url_for('edit_vehicle', vehicle_id=vehicle.id) }}" class="btn btn-warning btn-sm w-100 mb-2"><i class="fas fa-edit"></i> Editar</a>
+                                            <form action="{{ url_for('delete_vehicle', vehicle_id=vehicle.id) }}" method="post" onsubmit="return confirm('Tem a certeza?');" class="w-100"><button type="submit" class="btn btn-danger btn-sm w-100"><i class="fas fa-trash"></i> Eliminar</button></form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">Não há veículos registados.</div>
+                        {% endfor %}
+                    </div>
+
+                {% elif active_tab == 'rounds' %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mt-4">Gestão de Voltas</h3>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#personalRoundModal"><i class="fas fa-plus-circle me-2"></i> Iniciar/Fechar Volta Pessoal</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead><tr><th>Motorista</th><th>Matrícula</th><th>Destino</th><th>Saída</th><th>Chegada</th><th>Kms Saída</th><th>Kms Chegada</th><th>Estado</th><th>Ações</th></tr></thead>
+                            <tbody>
+                                {% for round in rounds %}
+                                    <tr>
+                                        <td>{{ round.motorista_nome or 'N/A' }}</td><td>{{ round.veiculo_matricula or 'N/A' }}</td><td>{{ round.destino }}</td><td>{{ round.data_hora_saida }}</td><td>{{ round.data_hora_chegada or '---' }}</td><td>{{ round.kms_saida }}</td><td>{{ round.kms_chegada or '---' }}</td>
+                                        <td><span class="badge {{ 'bg-warning text-dark' if round.status == 0 else 'bg-success' }}">{{ status_map[round.status] }}</span></td>
+                                        <td>
+                                            <div class="btn-group"><a href="{{ url_for('admin_edit_round', round_id=round.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                                                {% if round.status == 0 %}<form action="{{ url_for('admin_close_round', round_id=round.id) }}" method="post" onsubmit="return confirm('Tem a certeza?');" style="display:inline;"><button type="submit" class="btn btn-success btn-sm ms-2">Fechar</button></form>{% endif %}
+                                                <form action="{{ url_for('admin_delete_round', round_id=round.id) }}" method="post" onsubmit="return confirm('Tem a certeza?');" style="display:inline;"><button type="submit" class="btn btn-danger btn-sm ms-2">Eliminar</button></form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                {% elif active_tab == 'incidents' %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mt-4">Gestão de Incidências</h3>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addIncidentModal">Adicionar Incidência</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead><tr><th>Descrição</th><th>Veículo</th><th>Motorista</th><th>Data</th><th>Fotos</th><th>Status</th><th>Ações</th></tr></thead>
+                            <tbody>
+                                {% for incident in incidents %}
+                                <tr>
+                                    <td>{{ incident.descricao }}</td><td>{{ incident.veiculo_matricula }}</td><td>{{ incident.motorista_nome }}</td><td>{{ incident.data_reporte }}</td>
+                                    <td>
+                                        {% if incident.foto_incidencia %}
+                                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                            {% for foto in incident.foto_incidencia.split(',') %}<a href="{{ url_for('static', filename=foto) }}" target="_blank"><img src="{{ url_for('static', filename=foto) }}" alt="Foto da Incidência" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"></a>{% endfor %}
+                                            </div>
+                                        {% else %}N/A{% endif %}
+                                    </td>
+                                    <td><span class="badge {{ 'bg-warning text-dark' if incident.status == 0 else ('bg-info text-dark' if incident.status == 1 else 'bg-success') }}">{{ status_map[incident.status] }}</span></td>
+                                    <td>
+                                        <div class="btn-group"><a href="{{ url_for('edit_incident', incident_id=incident.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                                            {% if incident.status != 2 %}<form action="{{ url_for('close_incident', incident_id=incident.id) }}" method="post" onsubmit="return confirm('Tem a certeza?');" style="display:inline;"><button type="submit" class="btn btn-success btn-sm ms-2">Fechar</button></form>{% endif %}
+                                            <form action="{{ url_for('delete_incident', incident_id=incident.id) }}" method="post" onsubmit="return confirm('Tem a certeza?');" style="display:inline;"><button type="submit" class="btn btn-danger btn-sm ms-2">Eliminar</button></form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                {% elif active_tab == 'users' %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mt-4">Gestão de Utilizadores</h3>
+                        <a href="{{ url_for('add_user') }}" class="btn btn-primary">Adicionar Utilizador</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead><tr><th>Nome</th><th>Username</th><th>Nível de Acesso</th><th>Ações</th></tr></thead>
+                            <tbody>
+                                {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.nome }}</td><td>{{ user.username }}</td><td>{{ 'Administrador' if user.nivel_acesso == 1 else 'Motorista' }}</td>
+                                        <td>
+                                            <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                                            {% if user.id != session['user_id'] %}<form action="{{ url_for('delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Tem a certeza?');" style="display:inline;"><button type="submit" class="btn btn-danger btn-sm ms-2">Eliminar</button></form>{% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Iniciar/Fechar Volta Pessoal -->
+    <div class="modal fade" id="personalRoundModal" tabindex="-1" aria-labelledby="personalRoundModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="personalRoundModalLabel">A Minha Volta Pessoal</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body">
+            {% if not current_round %}
+                <form action="{{ url_for('iniciar_volta') }}" method="post" enctype="multipart/form-data"><div class="row"><div class="col-md-6 mb-3"><label for="id_veiculo" class="form-label">Veículo Disponível:</label><select id="id_veiculo" name="id_veiculo" class="form-select" required><option value="">Selecione...</option>{% for vehicle in available_vehicles %}<option value="{{ vehicle.id }}">{{ vehicle.nome }} - {{ vehicle.matricula }}</option>{% endfor %}</select></div><div class="col-md-6 mb-3"><label for="destino" class="form-label">Destino:</label><input type="text" id="destino" name="destino" class="form-control" required></div><div class="col-md-6 mb-3"><label for="kms_saida" class="form-label">KMs de Saída:</label><input type="number" id="kms_saida" name="kms_saida" class="form-control" step="0.1" required></div><div class="col-md-6 mb-3"><label for="data_hora_saida" class="form-label">Data e Hora de Saída:</label><input type="datetime-local" id="data_hora_saida" name="data_hora_saida" class="form-control" required></div><div class="col-12 mb-3"><label for="fotos_saida" class="form-label">Fotos da Saída:</label><input type="file" id="fotos_saida" name="fotos_saida" class="form-control" accept="image/*" multiple></div></div><button type="submit" class="btn btn-success">Iniciar a Minha Volta</button></form>
+            {% else %}
+                <div class="alert alert-warning"><strong>Tem uma volta em curso!</strong></div><p><strong>Veículo:</strong> {{ current_round.veiculo_matricula }}</p><p><strong>Destino:</strong> {{ current_round.destino }}</p><hr>
+                <form action="{{ url_for('fechar_volta', round_id=current_round.id) }}" method="post" enctype="multipart/form-data"><h5 class="mb-3">Fechar a Minha Volta</h5><div class="row"><div class="col-md-6 mb-3"><label for="kms_chegada" class="form-label">KMs de Chegada:</label><input type="number" id="kms_chegada" name="kms_chegada" class="form-control" step="0.1" required></div><div class="col-md-6 mb-3"><label for="data_hora_chegada" class="form-label">Data e Hora de Chegada:</label><input type="datetime-local" id="data_hora_chegada" name="data_hora_chegada" class="form-control" required></div><div class="col-12 mb-3"><label for="fotos_chegada" class="form-label">Fotos da Chegada:</label><input type="file" id="fotos_chegada" name="fotos_chegada" class="form-control" accept="image/*" multiple></div></div><button type="submit" class="btn btn-danger">Confirmar e Fechar Volta</button></form>
+            {% endif %}
+        </div></div></div>
+    </div>
+
+    <!-- Modal para Adicionar Nova Incidência -->
+    <div class="modal fade" id="addIncidentModal" tabindex="-1" aria-labelledby="addIncidentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="addIncidentModalLabel">Adicionar Nova Incidência</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body">
+            <form action="{{ url_for('add_incident') }}" method="post" enctype="multipart/form-data"><div class="row g-3"><div class="col-md-6"><label for="id_motorista" class="form-label">Motorista</label><select name="id_motorista" id="id_motorista" class="form-select" required><option value="">Selecione um motorista...</option>{% for motorista in motoristas %}<option value="{{ motorista.id }}">{{ motorista.nome }}</option>{% endfor %}</select></div><div class="col-md-6"><label for="id_veiculo" class="form-label">Veículo</label><select name="id_veiculo" id="id_veiculo" class="form-select" required><option value="">Selecione um veículo...</option>{% for veiculo in veiculos %}<option value="{{ veiculo.id }}">{{ veiculo.nome }} ({{ veiculo.matricula }})</option>{% endfor %}</select></div><div class="col-12"><label for="descricao" class="form-label">Descrição da Incidência</label><textarea name="descricao" id="descricao" rows="4" class="form-control" required></textarea></div><div class="col-12"><label for="foto_incidencia" class="form-label">Fotos da Incidência</p><input type="file" name="foto_incidencia" id="foto_incidencia" accept="image/*" class="form-control" multiple></label></div></div><div class="modal-footer mt-3"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Adicionar Incidência</button></div></form>
+        </div></div></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
